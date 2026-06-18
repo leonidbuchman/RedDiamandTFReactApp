@@ -2,23 +2,27 @@ html,
 body {
   height: 100%;
   margin: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .app-root {
-  height: 100vh;
+  min-height: 100vh;
   padding: 24px;
   background: radial-gradient(circle at top, #141d2f 0%, #0a0f1d 40%, #02050f 100%);
   color: #e8eef8;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
+}
+
+.app-root > main {
+  min-height: 0;
 }
 
 .panel-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 18px;
   overflow: hidden;
   flex: 0 0 auto;
@@ -219,7 +223,8 @@ body {
   flex-direction: column;
   flex: 1 1 auto;
   overflow: hidden;
-  max-height: calc(100vh - 240px);
+  max-height: calc(100vh - 260px);
+  min-height: 320px;
 }
 
 .log-viewer-header {
@@ -246,6 +251,30 @@ body {
 
 .panel-control {
   grid-column: span 2;
+}
+
+@media (max-width: 1280px) {
+  .panel-control {
+    grid-column: span 1;
+  }
+}
+
+@media (max-height: 950px) {
+  .app-root {
+    padding: 16px;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .panel-grid {
+    gap: 14px;
+  }
+
+  .log-viewer {
+    padding: 18px;
+  }
 }
 
 .log-error {

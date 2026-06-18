@@ -258,7 +258,6 @@ function LogViewer() {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState(null);
   const [attempting, setAttempting] = useState(false);
-  const logsEndRef = useRef(null);
   const socketRef = useRef(null);
 
   const getSeverityClass = (line) => {
@@ -425,12 +424,6 @@ function LogViewer() {
   }, []);
 
 
-  useEffect(() => {
-    if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [logs]);
-
   return (
     <section className="log-viewer">
       <div className="log-viewer-header">
@@ -481,7 +474,6 @@ function LogViewer() {
             </div>
           ))
         )}
-        <div ref={logsEndRef} />
       </div>
     </section>
   );

@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import io from "socket.io-client";
 import "./App.css";
 
-const API_URL = "http://192.168.2.45:3300/commands";
-const SOCKET_URL = "http://192.168.2.45";
-const FRONTTAIL_NAMESPACE = "/";
+const API_URL = `http://${window.location.hostname}:3300/commands`;
+const LOGS_STREAM_URL = `http://${window.location.hostname}:3300/logs/stream`;
+const LOGS_TAIL_URL = `http://${window.location.hostname}:3300/logs/tail`;
 
 async function sendCommand(cmd, arg, timeoutMs = 5000) {
   const controller = new AbortController();
@@ -81,6 +80,13 @@ function extractLogLevel(payload) {
   }
   return String(payload);
 }
+
+// Strip ANSI color codes from log lines
+function stripAnsiCodes(line) {
+  return String(line).replace(/\x1b\[[0-9;]*m/g, '').replace(/\u001b\[[0-9;]*m/g, '');
+}
+
+
 
 function ReaderPanel({ readerId, setConnection, baud, setBaud, readerMode, setReaderMode }) {
   const [log, setLog] = useState("");
@@ -318,50 +324,50 @@ function LogViewer() {
     setLogs([]);
 
     try {
-      const socketUrl = `${SOCKET_URL}${FRONTTAIL_NAMESPACE}`;
-      console.log("Connecting to Frontail socket URL:", socketUrl);
-      const socket = io(socketUrl, {
-        path: "/socket.io",
-        transports: ["websocket"],
-        upgrade: false,
-      });
+      // Fetch initial log tail
+      const tailRes = await fetch(`${LOGS_TAIL_URL}?lines=500`);
+      if (tailRes.ok) {
+        const data = await tailRes.json();
+        const cleanedLines = (data.lines || []).map(stripAnsiCodes);
+        setLogs(cleanedLines);
+      }
 
-      socketRef.current = socket;
+      // Connect to streaming endpoint
+      console.log("Connecting to log stream:", LOGS_STREAM_URL);
+      const eventSource = new EventSource(LOGS_STREAM_URL);
 
-      socket.on("connect", () => {
-        console.log("Socket connected", socket.id);
+      eventSource.onopen = () => {
+        console.log("Log stream connected");
         setConnected(true);
         setAttempting(false);
         setError(null);
-      });
+      };
 
-      socket.on("disconnect", (reason) => {
-        console.log("Socket disconnected", reason);
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.line) {
+            const cleanedLine = stripAnsiCodes(data.line);
+            console.log("Received log line:", cleanedLine);
+            setLogs((prev) => {
+              const updated = [...prev, String(cleanedLine)];
+              return updated.slice(-500);
+            });
+          }
+        } catch (err) {
+          console.error("Failed to parse log event:", err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("Log stream error:", err);
+        setError("Connection to log stream failed");
         setConnected(false);
-      });
-
-      socket.on("reconnect_attempt", (attempt) => {
-        console.log("Socket reconnect attempt", attempt);
-      });
-
-      socket.on("connect_error", (err) => {
-        console.error("Socket connect error", err);
-        setError(err.message || String(err));
         setAttempting(false);
-        setConnected(false);
-      });
+        eventSource.close();
+      };
 
-      socket.on("error", (err) => {
-        console.error("Socket error", err);
-      });
-
-      socket.on("line", (line) => {
-        console.log("Socket received line event", line);
-        setLogs((prev) => {
-          const updated = [...prev, String(line)];
-          return updated.slice(-500);
-        });
-      });
+      socketRef.current = eventSource;
     } catch (err) {
       console.error("Log viewer connect error:", err);
       setError(err.message || String(err));
@@ -377,7 +383,7 @@ function LogViewer() {
     return () => {
       console.log("LogViewer component unmounting");
       if (socketRef.current) {
-        socketRef.current.disconnect();
+        socketRef.current.close();
       }
     };
   }, []);

@@ -179,11 +179,14 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 16px;
   padding: 14px;
-  min-height: 120px;
+  min-height: 108px;
+  max-height: 180px;
+  height: 140px;
   font-size: 0.92rem;
   line-height: 1.5;
   color: #e2e8f0;
   overflow-x: auto;
+  overflow-y: auto;
 }
 
 .panel-log code {
@@ -216,7 +219,7 @@ body {
   flex-direction: column;
   flex: 1 1 auto;
   overflow: hidden;
-  max-height: calc(100vh - 220px);
+  max-height: calc(100vh - 240px);
 }
 
 .log-viewer-header {
@@ -230,6 +233,19 @@ body {
 .log-viewer-header h3 {
   margin: 0;
   font-size: 1.1rem;
+}
+
+.log-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 6px;
+}
+
+.panel-control {
+  grid-column: span 2;
 }
 
 .log-error {

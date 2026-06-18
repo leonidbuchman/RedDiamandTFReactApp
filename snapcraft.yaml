@@ -1,12 +1,12 @@
 name: device-control
 base: core24
-version: '1.0.0'
+version: '0.06'
 summary: Device Control Dashboard
 description: |
   A React-based control dashboard for Red Diamonds fixture devices.
 
-grade: devel
-confinement: devmode
+grade: stable
+confinement: strict
 
 apps:
   device-control:

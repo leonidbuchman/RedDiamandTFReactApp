@@ -149,9 +149,10 @@ function ReaderPanel({ readerId, setConnection, baud, setBaud, readerMode, setRe
   );
 }
 
-function ControlPanel({ setConnection, logLevel, setLogLevel, onUpdateConfig }) {
+function ControlPanel({ setConnection, logLevel, setLogLevel, onUpdateConfig, className }) {
   const [degrees, setDegrees] = useState(90);
   const [log, setLog] = useState("");
+  const [commandInput, setCommandInput] = useState("");
 
   const send = async (cmd, arg, timeoutMs) => {
     const res = await sendCommand(cmd, arg, timeoutMs);
@@ -167,8 +168,27 @@ function ControlPanel({ setConnection, logLevel, setLogLevel, onUpdateConfig }) 
     setConnection(res.ok);
   };
 
+  const sendCustomCommand = async () => {
+    const trimmed = String(commandInput || "").trim();
+    if (!trimmed) {
+      setLog("Please enter a command.");
+      return;
+    }
+
+    const [cmd, ...rest] = trimmed.split(/\s+/);
+    const arg = rest.length > 0 ? rest.join(" ") : undefined;
+    await send(cmd, arg);
+  };
+
+  const handleCommandKeyDown = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sendCustomCommand();
+    }
+  };
+
   return (
-    <section className="panel">
+    <section className={`panel ${className || ""}`}>
       <div className="panel-header">
         <h3>Control</h3>
       </div>
@@ -208,6 +228,22 @@ function ControlPanel({ setConnection, logLevel, setLogLevel, onUpdateConfig }) 
       <div className="panel-row">
         <button className="button-secondary" onClick={() => send("saveeeprom")}>Save EEPROM</button>
         <button className="button-secondary" onClick={() => send("rehome", undefined, 10000)}>Rehome</button>
+      </div>
+
+      <div className="panel-row">
+        <label style={{ flex: 1, minWidth: 0 }}>
+          Command Input
+          <input
+            type="text"
+            value={commandInput}
+            onChange={(e) => setCommandInput(e.target.value)}
+            onKeyDown={handleCommandKeyDown}
+            placeholder="Example: reset arg1 arg2"
+          />
+        </label>
+        <button className="button-primary" onClick={sendCustomCommand}>
+          Send Cmd
+        </button>
       </div>
 
       <div className="panel-log">
@@ -534,6 +570,7 @@ export default function App() {
         />
 
         <ControlPanel
+          className="panel-control"
           setConnection={setConnected}
           logLevel={logLevel}
           setLogLevel={setLogLevel}
